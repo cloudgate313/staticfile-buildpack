@@ -1,201 +1,27 @@
-Deploy static HTML/JS/CSS apps to Cloud Foundry
------------------------------------------------
 
-Working on a pure front-end only web app or demo? It is easy to share it via your Cloud Foundry:
+# Deploy Angular - Single Page Applications + **Basic SEO & Deep Linking Enabled
 
-```
-cf push my-site -m 64M -b https://github.com/cloudfoundry-community/staticfile-buildpack.git
-```
+This **Cloud Foundry Buildpack** was modified from the [original](https://github.com/cloudfoundry-incubator/staticfile-buildpack) to enable googlebot crawling and [deep linking](http://en.wikipedia.org/wiki/Deep_linking "").  Allowing pages to be indexed using the google [web master tools](https://www.google.com/webmasters/).
 
-Your Cloud Foundry might already have this buildpack installed (see [Upload](#administrator-upload) section for administration):
+### Deployment
+After compiling the Angular - single page application take the "generated" or "distribution" folder and run the command below in the terminal.
+
 
 ```
-$ cf buildpacks
-Getting buildpacks...
-
-buildpack          position   enabled   locked   filename
-staticfiles        1          true      false    staticfile-buildpack-v0.4.2.zip
-java_buildpack     2          true      false    java-buildpack-offline-v2.4.zip
-...
+cf push my-site -m 64M -b https://github.com/cloudgate313/staticfile-buildpack.git
 ```
 
-You only need to create a `Staticfile` file for Cloud Foundry to detect this buildpack:
+See original buildpack for a more indepth explaination [here](https://github.com/cloudfoundry-incubator/staticfile-buildpack).
+### Acknowledgements (resources)
+[Alexey Kutuzov's](http://senior-java-developer.com/html5angularjsnginx-crawlable-application/) nginx.conf configurations and nginx use cases.
 
-```
-touch Staticfile
-cf push my-site -m 64M
-```
+[Jesse Lawson's](http://lawsonry.com/2014/05/diy-angularjs-seo-with-phantomjs-the-easy-way/) overview on seo for single page applications.
 
-Why `-m 64M`? Your static assets will be served by [Nginx](http://nginx.com/) and it only requires 20M [[reference](http://wiki.nginx.org/WhyUseIt)]. The `-m 64M` reduces the RAM allocation from the default 1G allocated to Cloud Foundry containers. In the future there may be a way for a buildpack to indicate its default RAM requirements; but not as of writing.
 
-Configuration
-=============
+### **Basic:
+This is not a complete optimized solution for seo. Cached snapshots passed to bots and auto indexing is the next step.  Currently developing a solution that can be easily deployed to [Cloud Foundry](http://www.cloudfoundry.org/index.html).  Suggestions are encouraged.
 
-### Alternate root folder
+**Read me** created with Mou [mark down][id] editor for mac.  
 
-By default, the buildpack will serve `index.html` and all other assets from the root folder of your project.
+[id]: http://25.io/mou/ "Markdown editor on Mac OS X"
 
-In many cases, you may have an alternate folder where your HTML/CSS/JavaScript files are to be served from, such as `dist/` or `public/`.
-
-To configure the buildpack add the following line to your `Staticfile`:
-
-```yaml
-root: dist
-```
-
-### Basic authentication
-
-Protect your website with a user/password configured via environment variables.
-
-![basic-auth](http://cl.ly/image/13402a2d0R1i/basicauth.png)
-
-Convert the username / password to the required format: http://www.htaccesstools.com/htpasswd-generator/
-
-For example, username `bob` and password `bob` becomes `bob:$apr1$DuUQEQp8$ZccZCHQElNSjrg.erwSFC0`.
-
-Create a file in the root of your application `Staticfile.auth`. This becomes the `.htpasswd` file for nginx to project your site. It can include one or more user/password lines.
-
-```
-bob:$apr1$DuUQEQp8$ZccZCHQElNSjrg.erwSFC0
-```
-
-Push your application to apply changes to basic auth. Remove the file and push to disable basic auth.
-
-### Directory Index
-
-If your site doesn't have a nice `index.html`, you can configure `Staticfile` to display a Directory Index of other files; rather than show a relatively unhelpful 404 error.
-
-![index](http://cl.ly/image/2U2y121g000g/directory-index.png)
-
-Add a line to your `Staticfile` that begins with `directory:`
-
-```
-directory: visible
-```
-
-Administrator Upload
-====================
-
-Everyone can automatically use this buildpack if your Cloud Foundry Administrator uploads it.
-
-[Releases](https://github.com/cloudfoundry-community/staticfile-buildpack/releases) are publicly downloadable.
-
-To initially install, say v0.4.1:
-
-```
-wget https://github.com/cloudfoundry-community/staticfile-buildpack/releases/download/v0.4.2/staticfile-buildpack-v0.4.2.zip
-cf create-buildpack staticfiles_buildpack staticfile-buildpack-v0.4.2.zip 1
-```
-
-Subsequently update the buildpack, say v0.5.0:
-
-```
-wget https://github.com/cloudfoundry-community/staticfile-buildpack/releases/download/v0.5.0/staticfile-buildpack-v0.5.0.zip
-cf update-buildpack staticfiles_buildpack -p staticfile-buildpack-v0.5.0.zip
-```
-
-### To create/upload from source repository
-
-```
-zip -r ../staticfile-buildpack.zip *
-cf create-buildpack staticfiles_buildpack ../staticfile-buildpack.zip 1
-```
-
-Subsequently, update the buildpack with:
-
-```
-zip -r ../staticfile-buildpack.zip *
-cf update-buildpack staticfiles_buildpack -p ../staticfile-buildpack.zip
-```
-
-Test that it correctly detects the buildpack:
-
-```
-cf push staticfile -p test/fixtures/staticfile_app
-...
-Staging failed: An application could not be detected by any available buildpack
-```
-
-Test that it correctly ignores the buildpack if `Staticfile` file is missing:
-
-```
-cf push non_staticfile_app -p test/fixtures/non_staticfile_app
-```
-
-Acceptance Tests
-----------------
-
-After installing the buildpack, you can run a set of Acceptance Tests.
-
-https://github.com/cloudfoundry-community/staticfile-buildpack-acceptance-tests
-
-Local development
-=================
-
-There are five example apps that should all compile successfully:
-
-```
-cf push staticfile -p test/fixtures/staticfile_app -b https://github.com/cloudfoundry-community/staticfile-buildpack.git
-cf push staticfile -p test/fixtures/alternate_root -b https://github.com/cloudfoundry-community/staticfile-buildpack.git
-cf push staticfile -p test/fixtures/directory_index -b https://github.com/cloudfoundry-community/staticfile-buildpack.git
-cf push staticfile -p test/fixtures/basic_auth -b https://github.com/cloudfoundry-community/staticfile-buildpack.git
-cf push staticfile -p test/fixtures/reverse_proxy -b https://github.com/cloudfoundry-community/staticfile-buildpack.git
-```
-
-Building Nginx
-==============
-
-```
-vagrant up
-vagrant ssh
-```
-
-Inside vagrant:
-
-```
-cd /vagrant
-./bin/build_nginx
-exit
-```
-
-Nginx will be stuffed into a tarball in the `vendor/` folder.
-
-Finally, destroy the vagrant VM:
-
-```
-vagrant destroy
-```
-
-Buildpack release process
-=========================
-
-Each tagged release should include an uploaded `staticfile-buildpack-vX.Y.Z.zip` to Github to make it easy to download by administrators.
-
-These instructions use the [github-release](https://github.com/aktau/github-release) tool.
-
-```
-tag=vX.Y.Z
-description="USEFUL DESCRIPTION"
-git tag $tag
-git push --tags
-github-release release \
-    --user cloudfoundry-community \
-    --repo staticfile-buildpack \
-    --tag $tag \
-    --name "Staticfile Buildpack $tag" \
-    --description "$description"
-
-zip -r ../staticfile-buildpack-$tag.zip *
-
-github-release upload \
-    --user cloudfoundry-community \
-    --repo staticfile-buildpack \
-    --tag $tag \
-    --name staticfile-buildpack-$tag.zip \
-    --file ../staticfile-buildpack-$tag.zip
-```
-
-Acknowledgements
-================
-
-This buildpack is based heavily upon Jordon Bedwell's Heroku buildpack and the modifications by David Laing for Cloud Foundry [nginx-buildpack](https://github.com/cloudfoundry-community/nginx-buildpack). It has been tuned for usability (configurable with `Staticfile`) and to be included as a default buildpack (detects `Staticfile` rather than the presence of an `index.html`). Thanks for the buildpack Jordon!
